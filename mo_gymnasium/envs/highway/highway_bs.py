@@ -1,31 +1,16 @@
-import gym
-import gymnasium
-import numpy as np
-from gymnasium.spaces import (
-    Box,
-    Dict,
-    Discrete,
-    Graph,
-    MultiBinary,
-    MultiDiscrete,
-    Sequence,
-    Text,
-    Tuple,
-)
-import sys
-# the mock-0.3.1 dir contains testcase.py, testutils.py & mock.py
-sys.path.append(r'I:\Research\tcom paper\highway-env-1.7\highway_env')
 
+import numpy as np
+from gymnasium.spaces import Box
+from gymnasium.utils import EzPickle
+from highway_env.envs import HighwayEnv, HighwayEnvFast
 from highway_env.envs import HighwayEnv, HighwayEnvFast
 from highway_env.envs import HighwayEnvBS
 
-class MOHighwayEnv(HighwayEnv):
+class MOHighwayEnv(HighwayEnv, EzPickle):
     """
     ## Description
     Multi-objective version of the HighwayEnv environment.
-
     See [highway-env](https://github.com/eleurent/highway-env) for more information.
-
     ## Reward Space
     The reward is 3-dimensional:
     - 0: high speed reward
@@ -34,16 +19,11 @@ class MOHighwayEnv(HighwayEnv):
     """
 
     def __init__(self, *args, **kwargs):
+        EzPickle.__init__(self, *args, **kwargs)
+
         super().__init__(*args, **kwargs)
         self.reward_space = Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
-        self.observation_space = _convert_space(self.observation_space)
-        self.action_space = _convert_space(self.action_space)
-
-    def reset(self, seed=None, **kwargs):
-        obs, info = super().reset(seed=seed, **kwargs)
-        self.observation_space = _convert_space(self.observation_space)
-        self.action_space = _convert_space(self.action_space)
-        return obs, info
+        self.reward_dim = 3
 
     def step(self, action):
         obs, reward, terminated, truncated, info = super().step(action)
@@ -67,14 +47,6 @@ class MOHighwayEnvFast(HighwayEnvFast):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.reward_space = Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
-        self.observation_space = _convert_space(self.observation_space)
-        self.action_space = _convert_space(self.action_space)
-
-    def reset(self, seed=None, **kwargs):
-        obs, info = super().reset(seed=seed, **kwargs)
-        self.observation_space = _convert_space(self.observation_space)
-        self.action_space = _convert_space(self.action_space)
-        return obs, info
 
     def step(self, action):
         obs, reward, terminated, truncated, info = super().step(action)
@@ -98,13 +70,13 @@ class MOHighwayEnvFastBS(HighwayEnvBS):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.reward_space = Box(low=-2.0, high=3.0, shape=(2,), dtype=np.float32)
-        self.observation_space = _convert_space(self.observation_space)
-        self.action_space = _convert_space(self.action_space)
+        # self.observation_space = _convert_space(self.observation_space)
+        # self.action_space = _convert_space(self.action_space)
 
     def reset(self, seed=None, **kwargs):
         obs, info = super().reset(seed=seed, **kwargs)
-        self.observation_space = _convert_space(self.observation_space)
-        self.action_space = _convert_space(self.action_space)
+        # self.observation_space = _convert_space(self.observation_space)
+        # self.action_space = _convert_space(self.action_space)
         return obs, info
 
     def step(self, action):
@@ -132,37 +104,37 @@ class MOHighwayEnvFastBS(HighwayEnvBS):
         )
 
 
-def _convert_space(space: gym.Space) -> gymnasium.Space:
-    """Converts a gym space to a gymnasium space.
-    Args:
-        space: the space to convert
-    Returns:
-        The converted space
-    """
-    if isinstance(space, gym.spaces.Discrete):
-        return Discrete(n=space.n)
-    elif isinstance(space, gym.spaces.Box):
-        return Box(low=space.low, high=space.high, shape=space.shape, dtype=space.dtype)
-    elif isinstance(space, gym.spaces.MultiDiscrete):
-        return MultiDiscrete(nvec=space.nvec)
-    elif isinstance(space, gym.spaces.MultiBinary):
-        return MultiBinary(n=space.n)
-    elif isinstance(space, gym.spaces.Tuple):
-        return Tuple(spaces=tuple(map(_convert_space, space.spaces)))
-    elif isinstance(space, gym.spaces.Dict):
-        return Dict(spaces={k: _convert_space(v) for k, v in space.spaces.items()})
-    elif isinstance(space, gym.spaces.Sequence):
-        return Sequence(space=_convert_space(space.feature_space))
-    elif isinstance(space, gym.spaces.Graph):
-        return Graph(
-            node_space=_convert_space(space.node_space),  # type: ignore
-            edge_space=_convert_space(space.edge_space),  # type: ignore
-        )
-    elif isinstance(space, gym.spaces.Text):
-        return Text(
-            max_length=space.max_length,
-            min_length=space.min_length,
-            charset=space._char_str,
-        )
-    else:
-        return space
+# def _convert_space(space: gym.Space) -> gymnasium.Space:
+#     """Converts a gym space to a gymnasium space.
+#     Args:
+#         space: the space to convert
+#     Returns:
+#         The converted space
+#     """
+#     if isinstance(space, gym.spaces.Discrete):
+#         return Discrete(n=space.n)
+#     elif isinstance(space, gym.spaces.Box):
+#         return Box(low=space.low, high=space.high, shape=space.shape, dtype=space.dtype)
+#     elif isinstance(space, gym.spaces.MultiDiscrete):
+#         return MultiDiscrete(nvec=space.nvec)
+#     elif isinstance(space, gym.spaces.MultiBinary):
+#         return MultiBinary(n=space.n)
+#     elif isinstance(space, gym.spaces.Tuple):
+#         return Tuple(spaces=tuple(map(_convert_space, space.spaces)))
+#     elif isinstance(space, gym.spaces.Dict):
+#         return Dict(spaces={k: _convert_space(v) for k, v in space.spaces.items()})
+#     elif isinstance(space, gym.spaces.Sequence):
+#         return Sequence(space=_convert_space(space.feature_space))
+#     elif isinstance(space, gym.spaces.Graph):
+#         return Graph(
+#             node_space=_convert_space(space.node_space),  # type: ignore
+#             edge_space=_convert_space(space.edge_space),  # type: ignore
+#         )
+#     elif isinstance(space, gym.spaces.Text):
+#         return Text(
+#             max_length=space.max_length,
+#             min_length=space.min_length,
+#             charset=space._char_str,
+#         )
+#     else:
+#         return space
