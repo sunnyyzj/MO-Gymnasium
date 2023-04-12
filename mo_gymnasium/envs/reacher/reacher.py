@@ -2,7 +2,6 @@ from typing import Optional
 
 import numpy as np
 from gymnasium import spaces
-from gymnasium.utils import EzPickle
 from pybulletgym.envs.roboschool.envs.env_bases import BaseBulletEnv
 from pybulletgym.envs.roboschool.robots.robot_bases import MJCFBasedRobot
 from pybulletgym.envs.roboschool.scenes.scene_bases import SingleRobotEmptyScene
@@ -11,7 +10,8 @@ from pybulletgym.envs.roboschool.scenes.scene_bases import SingleRobotEmptyScene
 target_positions = list(map(lambda l: np.array(l), [(0.14, 0.0), (-0.14, 0.0), (0.0, 0.14), (0.0, -0.14)]))
 
 
-class ReacherBulletEnv(BaseBulletEnv, EzPickle):
+class ReacherBulletEnv(BaseBulletEnv):
+
     metadata = {"render_modes": ["human", "rgb_array"]}
 
     def __init__(
@@ -20,7 +20,6 @@ class ReacherBulletEnv(BaseBulletEnv, EzPickle):
         target=(0.14, 0.0),
         fixed_initial_state: Optional[tuple] = (3.14, 0),
     ):
-        EzPickle.__init__(self, render_mode, target, fixed_initial_state)
         self.robot = ReacherRobot(target, fixed_initial_state=fixed_initial_state)
         self.render_mode = render_mode
         BaseBulletEnv.__init__(self, self.robot, render=render_mode == "human")
@@ -44,7 +43,6 @@ class ReacherBulletEnv(BaseBulletEnv, EzPickle):
         self.action_space = spaces.Discrete(9)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32)
         self.reward_space = spaces.Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float32)
-        self.reward_dim = 4
 
     def create_single_player_scene(self, bullet_client):
         return SingleRobotEmptyScene(bullet_client, gravity=0.0, timestep=0.0165, frame_skip=1)
@@ -147,6 +145,7 @@ class ReacherRobot(MJCFBasedRobot):
 
 
 if __name__ == "__main__":
+
     env = ReacherBulletEnv()
     # env.render(mode='human')
     obs = env.reset()

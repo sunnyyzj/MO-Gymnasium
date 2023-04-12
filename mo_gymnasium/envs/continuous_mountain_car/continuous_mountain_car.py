@@ -6,10 +6,9 @@ from gymnasium import spaces
 from gymnasium.envs.classic_control.continuous_mountain_car import (
     Continuous_MountainCarEnv,
 )
-from gymnasium.utils import EzPickle
 
 
-class MOContinuousMountainCar(Continuous_MountainCarEnv, EzPickle):
+class MOContinuousMountainCar(Continuous_MountainCarEnv):
     """
     A continuous version of the MountainCar environment, where the goal is to reach the top of the mountain.
 
@@ -23,10 +22,8 @@ class MOContinuousMountainCar(Continuous_MountainCarEnv, EzPickle):
 
     def __init__(self, render_mode: Optional[str] = None, goal_velocity=0):
         super().__init__(render_mode, goal_velocity)
-        EzPickle.__init__(self, render_mode, goal_velocity)
 
         self.reward_space = spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([0.0, 0.0]), shape=(2,), dtype=np.float32)
-        self.reward_dim = 2
 
     def step(self, action: np.ndarray):
         # Essentially a copy paste from original env, except the rewards

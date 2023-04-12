@@ -15,9 +15,7 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
-import os
-
-import mo_gymnasium
+from typing import Any, Dict
 
 
 project = "MO-Gymnasium"
@@ -25,7 +23,7 @@ copyright = "2023"
 author = "Farama Foundation"
 
 # The full version, including alpha/beta/rc tags
-release = mo_gymnasium.__version__
+release = "0.3.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,7 +37,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.githubpages",
     "myst_parser",
-    "sphinx_github_changelog",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -69,15 +66,16 @@ html_favicon = "_static/img/favicon.png"
 html_theme_options = {
     # "light_logo": "img/Minari.svg",
     # "dark_logo": "img/Minari_White.svg",
-    "versioning": True,
-    "source_repository": "https://github.com/Farama-Foundation/MO-Gymnasium/",
-    "source_branch": "main",
-    "source_directory": "docs/",
+    # "gtag": "G-R5TRTT6R78",
+    # "versioning": True,
 }
+html_context: Dict[str, Any] = {}
+html_context["conf_py_path"] = "/docs/"
+html_context["display_github"] = True
+html_context["github_user"] = "Farama-Foundation"
+html_context["github_repo"] = "MO-Gymnasium"
+html_context["github_version"] = "main"
+html_context["slug"] = "mo_gymnasium"
 
 html_static_path = ["_static"]
 html_css_files = []
-
-# -- Generate Changelog -------------------------------------------------
-
-sphinx_github_changelog_token = os.environ.get("SPHINX_GITHUB_CHANGELOG_TOKEN")

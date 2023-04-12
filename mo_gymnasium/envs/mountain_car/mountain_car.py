@@ -4,10 +4,9 @@ from typing import Optional
 import numpy as np
 from gymnasium import spaces
 from gymnasium.envs.classic_control.mountain_car import MountainCarEnv
-from gymnasium.utils import EzPickle
 
 
-class MOMountainCar(MountainCarEnv, EzPickle):
+class MOMountainCar(MountainCarEnv):
     """
     A multi-objective version of the MountainCar environment, where the goal is to reach the top of the mountain.
 
@@ -16,16 +15,14 @@ class MOMountainCar(MountainCarEnv, EzPickle):
     ## Reward space:
     The reward space is a 3D vector containing the time penalty, and penalties for reversing and going forward.
     - time penalty: -1.0 for each time step
-    - reverse penalty: -1.0 for each time step the action is 0 (reverse)
+    - reverse penalty: -1.0 for each time step the actuin is 0 (reverse)
     - forward penalty: -1.0 for each time step the action is 2 (forward)
     """
 
     def __init__(self, render_mode: Optional[str] = None, goal_velocity=0):
         super().__init__(render_mode, goal_velocity)
-        EzPickle.__init__(self, render_mode, goal_velocity)
 
         self.reward_space = spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
-        self.reward_dim = 3
 
     def step(self, action: int):
         assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid"

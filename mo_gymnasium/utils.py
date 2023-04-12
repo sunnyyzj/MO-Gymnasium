@@ -6,7 +6,6 @@ from typing import Iterator, Tuple, TypeVar
 
 import gymnasium as gym
 import numpy as np
-from gymnasium.utils import EzPickle
 from gymnasium.vector import SyncVectorEnv
 from gymnasium.wrappers import RecordEpisodeStatistics
 from gymnasium.wrappers.normalize import RunningMeanStd
@@ -29,7 +28,7 @@ def make(env_name: str, disable_env_checker: bool = True, **kwargs) -> gym.Env:
     return gym.make(env_name, disable_env_checker=disable_env_checker, **kwargs)
 
 
-class LinearReward(gym.Wrapper, EzPickle):
+class LinearReward(gym.Wrapper):
     """Makes the env return a scalar reward, which is the dot-product between the reward vector and the weight vector."""
 
     def __init__(self, env: gym.Env, weight: np.ndarray = None):
@@ -40,7 +39,6 @@ class LinearReward(gym.Wrapper, EzPickle):
             weight: weight vector to use in the dot product
         """
         super().__init__(env)
-        EzPickle.__init__(self, env, weight)
         if weight is None:
             weight = np.ones(shape=env.reward_space.shape)
         self.set_weight(weight)
@@ -69,7 +67,7 @@ class LinearReward(gym.Wrapper, EzPickle):
         return observation, scalar_reward, terminated, truncated, info
 
 
-class MONormalizeReward(gym.Wrapper, EzPickle):
+class MONormalizeReward(gym.Wrapper):
     """Wrapper to normalize the reward component at index idx. Does not touch other reward components."""
 
     def __init__(self, env: gym.Env, idx: int, gamma: float = 0.99, epsilon: float = 1e-8):
@@ -82,7 +80,6 @@ class MONormalizeReward(gym.Wrapper, EzPickle):
             gamma (float): The discount factor that is used in the exponential moving average.
         """
         super().__init__(env)
-        EzPickle.__init__(self, env, idx, gamma, epsilon)
         self.idx = idx
         self.num_envs = getattr(env, "num_envs", 1)
         self.is_vector_env = getattr(env, "is_vector_env", False)
@@ -124,7 +121,7 @@ class MONormalizeReward(gym.Wrapper, EzPickle):
         return rews / np.sqrt(self.return_rms.var + self.epsilon)
 
 
-class MOClipReward(gym.RewardWrapper, EzPickle):
+class MOClipReward(gym.RewardWrapper):
     """Clip reward[idx] to [min, max]."""
 
     def __init__(self, env: gym.Env, idx: int, min_r, max_r):
@@ -137,7 +134,6 @@ class MOClipReward(gym.RewardWrapper, EzPickle):
             max_r: max reward
         """
         super().__init__(env)
-        EzPickle.__init__(self, env, idx, min_r, max_r)
         self.idx = idx
         self.min_r = min_r
         self.max_r = max_r
@@ -153,7 +149,7 @@ class MOClipReward(gym.RewardWrapper, EzPickle):
         return reward
 
 
-class MOSyncVectorEnv(SyncVectorEnv, EzPickle):
+class MOSyncVectorEnv(SyncVectorEnv):
     """Vectorized environment that serially runs multiple environments."""
 
     def __init__(
@@ -168,7 +164,6 @@ class MOSyncVectorEnv(SyncVectorEnv, EzPickle):
             copy: If ``True``, then the :meth:`reset` and :meth:`step` methods return a copy of the observations.
         """
         super().__init__(env_fns, copy=copy)
-        EzPickle.__init__(self, env_fns, copy=copy)
         # Just overrides the rewards memory to add the number of objectives
         self.reward_space = self.envs[0].reward_space
         self._rewards = np.zeros(
@@ -180,7 +175,7 @@ class MOSyncVectorEnv(SyncVectorEnv, EzPickle):
         )
 
 
-class MORecordEpisodeStatistics(RecordEpisodeStatistics, EzPickle):
+class MORecordEpisodeStatistics(RecordEpisodeStatistics):
     """This wrapper will keep track of cumulative rewards and episode lengths.
 
     After the completion of an episode, ``info`` will look like this::
@@ -220,7 +215,6 @@ class MORecordEpisodeStatistics(RecordEpisodeStatistics, EzPickle):
             deque_size: The size of the buffers :attr:`return_queue` and :attr:`length_queue`
         """
         super().__init__(env, deque_size)
-        EzPickle.__init__(self, env, gamma, deque_size)
         # CHANGE: Here we just override the standard implementation to extend to MO
         # We also take care of the case where the env is vectorized
         self.reward_dim = self.env.reward_space.shape[0]

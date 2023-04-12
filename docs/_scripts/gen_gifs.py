@@ -17,8 +17,6 @@ pattern = re.compile(r"(?<!^)(?=[A-Z])")
 LENGTH = 300
 # iterate through all envspecs
 for env_spec in tqdm(gymnasium.envs.registry.values()):
-    if type(env_spec.entry_point) is not str:
-        continue
     print(env_spec.id)
 
     if env_spec.entry_point.split(".")[0] != "mo_gymnasium":
@@ -29,7 +27,6 @@ for env_spec in tqdm(gymnasium.envs.registry.values()):
         # the gymnasium needs to be rgb renderable
         if not ("rgb_array" in env.metadata["render_modes"]):
             continue
-
         # extract env name/type from class path
         split = str(type(env.unwrapped)).split(".")
 
@@ -63,6 +60,7 @@ for env_spec in tqdm(gymnasium.envs.registry.values()):
             state, info = env.reset()
             terminated, truncated = False, False
             while not (terminated or truncated) and len(frames) <= LENGTH:
+
                 frame = env.render()
                 frames.append(Image.fromarray(frame))
                 action = env.action_space.sample()

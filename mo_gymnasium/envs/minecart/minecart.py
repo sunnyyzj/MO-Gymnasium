@@ -4,14 +4,13 @@ import math
 from copy import deepcopy
 from math import ceil
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import gymnasium as gym
 import numpy as np
 import pygame
 import scipy.stats
 from gymnasium.spaces import Box, Discrete
-from gymnasium.utils import EzPickle
 from scipy.spatial import ConvexHull
 
 
@@ -87,7 +86,7 @@ CART_IMG = str(Path(__file__).parent.absolute()) + "/assets/cart.png"
 MINE_IMG = str(Path(__file__).parent.absolute()) + "/assets/mine.png"
 
 
-class Minecart(gym.Env, EzPickle):
+class Minecart(gym.Env):
     """
     ## Description
     Agent must collect two types of ores and minimize fuel consumption.
@@ -122,13 +121,6 @@ class Minecart(gym.Env, EzPickle):
     ## Episode Termination
     The episode ends when the cart returns to the base.
 
-    ## Arguments
-    - render_mode: The render mode to use. Can be "rgb_array" or "human".
-    - image_observation: If True, the observation is a RGB image of the environment.
-    - frame_skip: How many times each action is repeated. Default: 4
-    - incremental_frame_skip: Whether actions are repeated incrementally. Default: True
-    - config: Path to the .json configuration file. See the default configuration file for more information: https://github.com/Farama-Foundation/MO-Gymnasium/blob/main/mo_gymnasium/envs/minecart/mine_config.json
-
     ## Credits
     The code was refactored from [Axel Abels' source](https://github.com/axelabels/DynMORL).
     """
@@ -138,20 +130,13 @@ class Minecart(gym.Env, EzPickle):
     def __init__(
         self,
         render_mode: Optional[str] = None,
-        image_observation: bool = False,
-        frame_skip: int = 4,
-        incremental_frane_skip: bool = True,
+        image_observation=False,
         config=str(Path(__file__).parent.absolute()) + "/mine_config.json",
     ):
-        EzPickle.__init__(self, render_mode, image_observation, frame_skip, incremental_frane_skip, config)
-
         self.render_mode = render_mode
         self.screen = None
         self.last_render_mode_used = None
         self.config = config
-        self.frame_skip = frame_skip
-        assert self.frame_skip > 0, "Frame skip must be greater than 0."
-        self.incremental_frame_skip = incremental_frane_skip
 
         with open(self.config) as f:
             data = json.load(f)
@@ -189,35 +174,41 @@ class Minecart(gym.Env, EzPickle):
                 dtype=np.uint8,
             )
         else:
-            self.observation_space = Box(-np.ones(7), np.ones(7), dtype=np.float32)
+            self.observation_space = Box(np.zeros(7), np.ones(7), dtype=np.float32)
 
         self.action_space = Discrete(6)
         self.reward_space = Box(low=-1, high=self.capacity, shape=(self.ore_cnt + 1,))
-        self.reward_dim = self.ore_cnt + 1
 
-    def convex_coverage_set(self, gamma: float, symmetric: bool = True) -> List[np.ndarray]:
+    def obj_cnt(self):
+        return self.ore_cnt + 1
+
+    def convex_coverage_set(self, frame_skip=1, discount=0.98, incremental_frame_skip=True, symmetric=True):
         """
-        Computes an approximate convex coverage set (CCS).
+        Computes an approximate convex coverage set
 
-        Args:
-            gamma (float): Discount factor to apply to rewards.
-            symmetric (bool): If true, we assume the pattern of accelerations from the base to the mine is the same as from the mine to the base. Default: True
+        Keyword Arguments:
+            frame_skip {int} -- How many times each action is repeated (default: {1})
+            discount {float} -- Discount factor to apply to rewards (default: {1})
+            incremental_frame_skip {bool} -- Whether actions are repeated incrementally (default: {1})
+            symmetric {bool} -- If true, we assume the pattern of accelerations from the base to the mine is the same as from the mine to the base (default: {True})
 
         Returns:
             The convex coverage set
         """
-        policies = self.pareto_front(gamma, symmetric)
+        policies = self.pareto_coverage_set(frame_skip, discount, incremental_frame_skip, symmetric)
         origin = np.min(policies, axis=0)
         extended_policies = [origin] + policies
         return [policies[idx - 1] for idx in ConvexHull(extended_policies).vertices if idx != 0]
 
-    def pareto_front(self, gamma: float, symmetric: bool = True) -> List[np.ndarray]:
+    def pareto_coverage_set(self, frame_skip=1, discount=0.98, incremental_frame_skip=True, symmetric=True):
         """
-        Computes an approximate pareto front.
+        Computes an approximate pareto coverage set
 
-        Args:
-            gamma (float): Discount factor to apply to rewards
-            symmetric (bool): If true, we assume the pattern of accelerations from the base to the mine is the same as from the mine to the base. Default: True
+        Keyword Arguments:
+            frame_skip {int} -- How many times each action is repeated (default: {1})
+            discount {float} -- Discount factor to apply to rewards (default: {1})
+            incremental_frame_skip {bool} -- Whether actions are repeated incrementally (default: {1})
+            symmetric {bool} -- If true, we assume the pattern of accelerations from the base to the mine is the same as from the mine to the base (default: {True})
 
         Returns:
             The pareto coverage set
@@ -237,16 +228,16 @@ class Minecart(gym.Env, EzPickle):
 
             # Number of rotations required to face the mine
             angle = compute_angle(mine.pos, HOME_POS, [1, 1])
-            rotations = int(ceil(abs(angle) / (ROTATION * self.frame_skip)))
+            rotations = int(ceil(abs(angle) / (ROTATION * frame_skip)))
 
             # Build pattern of accelerations/nops to reach the mine
             # initialize with single acceleration
             queue = [
                 {
-                    "speed": ACCELERATION * self.frame_skip,
-                    "dist": mine_distance - self.frame_skip * (self.frame_skip + 1) / 2 * ACCELERATION
-                    if self.incremental_frame_skip
-                    else mine_distance - ACCELERATION * self.frame_skip * self.frame_skip,
+                    "speed": ACCELERATION * frame_skip,
+                    "dist": mine_distance - frame_skip * (frame_skip + 1) / 2 * ACCELERATION
+                    if incremental_frame_skip
+                    else mine_distance - ACCELERATION * frame_skip * frame_skip,
                     "seq": [ACT_ACCEL],
                 }
             ]
@@ -255,11 +246,11 @@ class Minecart(gym.Env, EzPickle):
             while len(queue) > 0:
                 seq = queue.pop()
                 # accelerate
-                new_speed = seq["speed"] + ACCELERATION * self.frame_skip
+                new_speed = seq["speed"] + ACCELERATION * frame_skip
                 accelerations = new_speed / ACCELERATION
                 movement = (
                     accelerations * (accelerations + 1) / 2 * ACCELERATION
-                    - (accelerations - self.frame_skip) * ((accelerations - self.frame_skip) + 1) / 2 * ACCELERATION
+                    - (accelerations - frame_skip) * ((accelerations - frame_skip) + 1) / 2 * ACCELERATION
                 )
                 dist = seq["dist"] - movement
                 speed = new_speed
@@ -268,7 +259,7 @@ class Minecart(gym.Env, EzPickle):
                 else:
                     queue.append({"speed": speed, "dist": dist, "seq": seq["seq"] + [ACT_ACCEL]})
                 # idle
-                dist = seq["dist"] - seq["speed"] * self.frame_skip
+                dist = seq["dist"] - seq["speed"] * frame_skip
 
                 if dist <= 0:
                     trimmed_sequences.append(seq["seq"] + [ACT_NONE])
@@ -282,7 +273,7 @@ class Minecart(gym.Env, EzPickle):
                     )
 
             # Build rational mining sequences
-            mine_means = mine.distribution_means() * self.frame_skip
+            mine_means = mine.distribution_means() * frame_skip
             mn_sum = np.sum(mine_means)
             # on average it takes up to this many actions to fill cart
             max_mine_actions = 0 if mn_sum == 0 else int(ceil(self.capacity / mn_sum))
@@ -302,7 +293,7 @@ class Minecart(gym.Env, EzPickle):
                         itertools.product(
                             [[ACT_LEFT] * rotations],
                             trimmed_sequences,
-                            [[ACT_BRAKE] + [ACT_LEFT] * (180 // (ROTATION * self.frame_skip))],
+                            [[ACT_BRAKE] + [ACT_LEFT] * (180 // (ROTATION * frame_skip))],
                             mine_sequences,
                             trimmed_sequences,
                         ),
@@ -318,7 +309,7 @@ class Minecart(gym.Env, EzPickle):
                         itertools.product(
                             [[ACT_LEFT] * rotations],
                             trimmed_sequences,
-                            [[ACT_BRAKE] + [ACT_LEFT] * (180 // (ROTATION * self.frame_skip))],
+                            [[ACT_BRAKE] + [ACT_LEFT] * (180 // (ROTATION * frame_skip))],
                             mine_sequences,
                         ),
                     )
@@ -338,7 +329,7 @@ class Minecart(gym.Env, EzPickle):
                         itertools.product(
                             [[ACT_LEFT] * rotations],
                             trimmed_sequences,
-                            [[ACT_LEFT] * (180 // (ROTATION * self.frame_skip))],
+                            [[ACT_LEFT] * (180 // (ROTATION * frame_skip))],
                             trimmed_sequences,
                         ),
                     )
@@ -353,12 +344,12 @@ class Minecart(gym.Env, EzPickle):
                         itertools.product(
                             [[ACT_LEFT] * rotations],
                             trimmed_sequences,
-                            [[ACT_LEFT] * (180 // (ROTATION * self.frame_skip))],
+                            [[ACT_LEFT] * (180 // (ROTATION * frame_skip))],
                         ),
                     )
 
             # Compute rewards for each sequence
-            fuel_costs = np.array([f * self.frame_skip for f in FUEL_LIST])
+            fuel_costs = np.array([f * frame_skip for f in FUEL_LIST])
 
             def maxlen(l):
                 if len(l) == 0:
@@ -367,16 +358,11 @@ class Minecart(gym.Env, EzPickle):
 
             longest_pattern = maxlen(trimmed_sequences)
             max_len = (
-                rotations
-                + longest_pattern
-                + 1
-                + (180 // (ROTATION * self.frame_skip))
-                + maxlen(mine_sequences)
-                + longest_pattern
+                rotations + longest_pattern + 1 + (180 // (ROTATION * frame_skip)) + maxlen(mine_sequences) + longest_pattern
             )
-            discount_map = gamma ** np.arange(max_len)
+            discount_map = discount ** np.arange(max_len)
             for s in all_sequences:
-                reward = np.zeros((len(s), self.reward_dim))
+                reward = np.zeros((len(s), self.obj_cnt()))
                 reward[:, -1] = fuel_costs[s]
                 mine_actions = s.count(ACT_MINE)
                 reward[-1, :-1] = mine_means * mine_actions / max(1, (mn_sum * mine_actions) / self.capacity)
@@ -428,36 +414,55 @@ class Minecart(gym.Env, EzPickle):
             mine_sprite.rect.centery = (mine.pos[1] * (1 - 2 * MARGIN)) * HEIGHT + MARGIN * HEIGHT
             self.mine_rects.append(mine_sprite.rect)
 
-    def step(self, action):
-        change = False  # Keep track of whether the state has changed
-        reward = np.zeros(self.ore_cnt + 1)
+    def step(self, action, frame_skip=4, incremental_frame_skip=True):
+        """Perform the given action `frame_skip` times
+         ["Mine", "Left", "Right", "Accelerate", "Brake", "None"]
+        Arguments:
+            action {int} -- Action to perform, ACT_MINE (0), ACT_LEFT (1), ACT_RIGHT (2), ACT_ACCEL (3), ACT_BRAKE (4) or ACT_NONE (5)
 
-        reward[-1] = FUEL_IDLE * self.frame_skip
+        Keyword Arguments:
+            frame_skip {int} -- Repeat the action this many times (default: {1})
+            incremental_frame_skip {int} -- If True, frame_skip actions are performed in succession, otherwise the repeated actions are performed simultaneously (e.g., 4 accelerations are performed and then the cart moves).
+
+        Returns:
+            tuple -- (state, reward, terminal) tuple
+        """
+        change = False  # Keep track of whether the state has changed
+
+        if action < 0 or action >= ACTION_COUNT:
+            action = ACT_NONE
+
+        reward = np.zeros(self.ore_cnt + 1)
+        if frame_skip < 1:
+            frame_skip = 1
+
+        reward[-1] = FUEL_IDLE * frame_skip
 
         if action == ACT_ACCEL:
-            reward[-1] += FUEL_ACC * self.frame_skip
+            reward[-1] += FUEL_ACC * frame_skip
         elif action == ACT_MINE:
-            reward[-1] += FUEL_MINE * self.frame_skip
+            reward[-1] += FUEL_MINE * frame_skip
 
-        for _ in range(self.frame_skip if self.incremental_frame_skip else 1):
+        for _ in range(frame_skip if incremental_frame_skip else 1):
+
             if action == ACT_LEFT:
-                self.cart.rotate(-ROTATION * (1 if self.incremental_frame_skip else self.frame_skip))
+                self.cart.rotate(-ROTATION * (1 if incremental_frame_skip else frame_skip))
                 change = True
             elif action == ACT_RIGHT:
-                self.cart.rotate(ROTATION * (1 if self.incremental_frame_skip else self.frame_skip))
+                self.cart.rotate(ROTATION * (1 if incremental_frame_skip else frame_skip))
                 change = True
             elif action == ACT_ACCEL:
-                self.cart.accelerate(ACCELERATION * (1 if self.incremental_frame_skip else self.frame_skip))
+                self.cart.accelerate(ACCELERATION * (1 if incremental_frame_skip else frame_skip))
             elif action == ACT_BRAKE:
-                self.cart.accelerate(-DECELERATION * (1 if self.incremental_frame_skip else self.frame_skip))
+                self.cart.accelerate(-DECELERATION * (1 if incremental_frame_skip else frame_skip))
             elif action == ACT_MINE:
-                for _ in range(1 if self.incremental_frame_skip else self.frame_skip):
+                for _ in range(1 if incremental_frame_skip else frame_skip):
                     change = self.mine() or change
 
             if self.end:
                 break
 
-            for _ in range(1 if self.incremental_frame_skip else self.frame_skip):
+            for _ in range(1 if incremental_frame_skip else frame_skip):
                 change = self.cart.step() or change
 
             distanceFromBase = mag(self.cart.pos - HOME_POS)
@@ -652,6 +657,7 @@ class Minecart(gym.Env, EzPickle):
         content_width = (width + 1) * self.ore_cnt
         offset = (self.cart_sprite.rect.width - content_width) / 2
         for i in range(self.ore_cnt):
+
             rect_height = height * self.cart.content[i] / self.capacity
 
             if rect_height >= 1:

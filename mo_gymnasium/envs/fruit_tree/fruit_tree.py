@@ -1,10 +1,7 @@
 # Environment from https://github.com/RunzheYang/MORL/blob/master/synthetic/envs/fruit_tree.py
-from typing import List
-
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from gymnasium.utils import EzPickle
 
 
 FRUITS = {
@@ -241,7 +238,7 @@ FRUITS = {
 }
 
 
-class FruitTreeEnv(gym.Env, EzPickle):
+class FruitTreeEnv(gym.Env):
     """
     ## Description
 
@@ -266,8 +263,6 @@ class FruitTreeEnv(gym.Env, EzPickle):
 
     def __init__(self, depth=6):
         assert depth in [5, 6, 7], "Depth must be 5, 6 or 7."
-        EzPickle.__init__(self, depth)
-
         self.reward_dim = 6
         self.tree_depth = depth  # zero based depth
         branches = np.zeros((int(2**self.tree_depth - 1), self.reward_dim))
@@ -294,19 +289,6 @@ class FruitTreeEnv(gym.Env, EzPickle):
     def get_tree_value(self, pos):
         return self.tree[self.get_ind(pos)]
 
-    def pareto_front(self, gamma: float) -> List[np.ndarray]:
-        """Returns the discounted pareto front of the tree.
-
-        Args:
-            gamma: Discount factor.
-
-        Returns:
-            List of discounted rewards.
-        """
-        fruits = np.array(FRUITS[str(self.tree_depth)])
-        disc_fruits = fruits * gamma ** (self.tree_depth - 1)
-        return list(disc_fruits)
-
     def reset(self, seed=None, **kwargs):
         super().reset(seed=seed)
 
@@ -318,7 +300,7 @@ class FruitTreeEnv(gym.Env, EzPickle):
         direction = {
             0: np.array([1, self.current_state[1]], dtype=np.int32),  # left
             1: np.array([1, self.current_state[1] + 1], dtype=np.int32),  # right
-        }[int(action)]
+        }[action]
 
         self.current_state = self.current_state + direction
 

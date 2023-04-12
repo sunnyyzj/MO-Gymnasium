@@ -1,26 +1,29 @@
 ---
-title: "MO-Gymnasium"
+hide-toc: true
 firstpage:
 lastpage:
 ---
 
 ```{toctree}
 :hidden:
-:caption: Introduction
+:glob:
+:caption: Environments
 
-introduction/install
-introduction/api
-environments/all-environments
-wrappers/wrappers
+environments/*
+```
+
+```{toctree}
+:hidden:
+:caption: Examples
+
 examples/morl_baselines
 ```
 
 ```{toctree}
 :hidden:
-:caption: Citing
+:caption: Wrappers
 
-examples/citation
-examples/publications
+wrappers/wrappers
 ```
 
 ```{toctree}
@@ -28,18 +31,12 @@ examples/publications
 :caption: Development
 
 community/community
-release_notes
 Github <https://github.com/Farama-Foundation/MO-Gymnasium>
 Donate <https://farama.org/donations>
 
 ```
 
 # MO-Gymnasium is a standardized API and a suite of environments for multi-objective reinforcement learning (MORL)
-
-```{figure} _static/mo_cheetah_rect.gif
-   :alt: MO-HalfCheetah gif
-   :width: 500px
-```
 
 ```{include} ../README.md
 :start-after: <!-- start elevator-pitch -->

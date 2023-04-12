@@ -5,7 +5,6 @@ import gymnasium as gym
 import numpy as np
 import pygame
 from gymnasium.spaces import Box, Discrete
-from gymnasium.utils import EzPickle
 
 
 MAZE = np.array(
@@ -31,7 +30,7 @@ GREEN = (0, 128, 0)
 BLACK = (0, 0, 0)
 
 
-class FourRoom(gym.Env, EzPickle):
+class FourRoom(gym.Env):
     """
     ## Description
     A discretized version of the gridworld environment introduced in [1]. Here, an agent learns to
@@ -86,10 +85,8 @@ class FourRoom(gym.Env, EzPickle):
                 0, 1, .... 9 indicates the type of shape to be placed in the corresponding cell
                 entries containing other characters are treated as regular empty cells
         """
-        EzPickle.__init__(self, render_mode, maze)
-
         self.render_mode = render_mode
-        self.window_size = int(13 * 35)
+        self.window_size = 512
         self.window = None
         self.clock = None
 
@@ -120,7 +117,6 @@ class FourRoom(gym.Env, EzPickle):
             dtype=np.int32,
         )
         self.reward_space = Box(low=0, high=1, shape=(3,))
-        self.reward_dim = 3
 
     def state_to_array(self, state):
         s = [element for tupl in state for element in tupl]
@@ -206,9 +202,6 @@ class FourRoom(gym.Env, EzPickle):
                 phi = self.features(old_state, action, self.state)
                 return self.state_to_array(self.state), phi, terminated, False, {}
 
-        if self.render_mode == "human":
-            self.render()
-
         # into an empty cell
         return (
             self.state_to_array(self.state),
@@ -234,7 +227,7 @@ class FourRoom(gym.Env, EzPickle):
 
     def render(self):
         # The size of a single grid square in pixels
-        pix_square_size = self.window_size // 13
+        pix_square_size = self.window_size / 13
 
         if self.window is None and self.render_mode is not None:
             pygame.init()
@@ -251,8 +244,6 @@ class FourRoom(gym.Env, EzPickle):
         self.font = pygame.font.SysFont(None, 48)
         img = self.font.render("G", True, BLACK)
         canvas.blit(img, (np.array(self.goal)[::-1] + 0.15) * pix_square_size)
-        img = self.font.render("S", True, BLACK)
-        canvas.blit(img, (np.array(self.initial[0])[::-1] + 0.15) * pix_square_size)
 
         for i in range(self.maze.shape[0]):
             for j in range(self.maze.shape[1]):
@@ -306,27 +297,19 @@ class FourRoom(gym.Env, EzPickle):
         )
 
         for x in range(13 + 1):
-            if x == 0 or x == 13:
-                width = 3
-                dash_lenght = 0
-            else:
-                width = 1
-                dash_lenght = 3
-            draw_line_dashed(
+            pygame.draw.line(
                 canvas,
                 0,
                 (0, pix_square_size * x),
                 (self.window_size, pix_square_size * x),
-                width=width,
-                dash_length=dash_lenght,
+                width=1,
             )
-            draw_line_dashed(
+            pygame.draw.line(
                 canvas,
                 0,
                 (pix_square_size * x, 0),
                 (pix_square_size * x, self.window_size),
-                width=width,
-                dash_length=dash_lenght,
+                width=1,
             )
 
         if self.render_mode == "human":
@@ -347,35 +330,11 @@ class FourRoom(gym.Env, EzPickle):
             pygame.quit()
 
 
-def draw_line_dashed(surface, color, start_pos, end_pos, width=1, dash_length=3, exclude_corners=True):
-    """Code from https://codereview.stackexchange.com/questions/70143/drawing-a-dashed-line-with-pygame."""
-    # convert tuples to numpy arrays
-    if dash_length < 1:
-        pygame.draw.line(surface, color, start_pos, end_pos, width)
-    else:
-        start_pos = np.array(start_pos)
-        end_pos = np.array(end_pos)
-
-        # get euclidean distance between start_pos and end_pos
-        length = np.linalg.norm(end_pos - start_pos)
-
-        # get amount of pieces that line will be split up in (half of it are amount of dashes)
-        dash_amount = int(length / dash_length)
-
-        # x-y-value-pairs of where dashes start (and on next, will end)
-        dash_knots = np.array([np.linspace(start_pos[i], end_pos[i], dash_amount) for i in range(2)]).transpose()
-
-        return [
-            pygame.draw.line(surface, color, tuple(dash_knots[n]), tuple(dash_knots[n + 1]), width)
-            for n in range(int(exclude_corners), dash_amount - int(exclude_corners), 2)
-        ]
-
-
 if __name__ == "__main__":
-    import mo_gymnasium as mo_gym
 
-    env = mo_gym.make("four-room-v0", render_mode="human")
+    env = FourRoom()
     terminated = False
     env.reset()
-    while True:
+    while not terminated:
+        env.render()
         obs, r, terminated, truncated, info = env.step(env.action_space.sample())
