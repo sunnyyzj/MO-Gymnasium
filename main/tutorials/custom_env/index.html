@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-content_root="../../">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark">
@@ -11,11 +11,11 @@
 <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Citation" href="../../examples/citation/" /><link rel="prev" title="MORL Baselines" href="../../examples/morl_baselines/" />
         <link rel="canonical" href="https://mo-gymnasium.farama.org/tutorials/custom_env.html" />
 
-    <link rel="shortcut icon" href="../../_static/favicon.png"/><!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20.dev1 -->
+    <link rel="shortcut icon" href="../../_static/favicon.png"/><!-- Generated with Sphinx 7.2.6 and Furo 2023.08.19.dev1 -->
         <title>Creating a custom environment - MO-Gymnasium Documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=a022fd11c0d7e10ac71ac296890386cea7a2fa24" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=093e2efd5a2c7b46ab7c7157e45f5f05a1e0a463" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=3e7f4c72" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=49cbaffd" />
     
     
 
@@ -53,18 +53,6 @@
               <line x1="0.232" y1="12" x2="23.5" y2="12"></line>
               <line x1="0.232" y1="20" x2="23.5" y2="20"></line>
             </svg>
-            <!-- <svg viewBox="0 0 24 24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <line x1="0.5" y1="4.5" x2="23.5" y2="4.5" style="fill: none; "></line>
-              <line x1="0.5" y1="12" x2="14" y2="12" ></line>
-              <line x1="0.5" y1="19.5" x2="23.5" y2="19.5"></line>
-              <polyline style="stroke-width: 0px;" points="17 7 22 12 17 17"></polyline>
-            </svg> -->
-            <!-- <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:20px">
-              <defs></defs>
-              <rect y="1" width="22" height="22" rx="2" ry="2" style="fill: none;" x="1"></rect>
-              <line x1="8" y1="1" x2="8" y2="23"></line>
-              <polyline style="stroke-linecap: round; fill: none; stroke-linejoin: round;" points="13 7 17 12 13 17"></polyline>
-            </svg> -->
           </label>
         </div>
         <div class="farama-header__left farama-header__center--mobile">
@@ -230,6 +218,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../environments/breakable-bottles/">Breakable-Bottles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../environments/deep-sea-treasure/">Deep-Sea-Treasure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../environments/deep-sea-treasure-concave/">Deep-Sea-Treasure-Concave</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../environments/deep-sea-treasure-mirrored/">Deep-Sea-Treasure-Mirrored</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../environments/fishwood/">Fishwood</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../environments/four-room/">Four-Room</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../environments/fruit-tree/">Fruit-Tree</a></li>
@@ -324,10 +313,10 @@
           <article role="main">
             
             <section id="creating-a-custom-environment">
-<h1>Creating a custom environment<a class="headerlink" href="#creating-a-custom-environment" title="Permalink to this heading">#</a></h1>
+<h1>Creating a custom environment<a class="headerlink" href="#creating-a-custom-environment" title="Link to this heading">#</a></h1>
 <p>This tutorials goes through the steps of creating a custom environment for MO-Gymnasium. Since MO-Gymnasium is closely tied to Gymnasium, we will refer to its documentation for some parts.</p>
 <section id="create-a-new-environment-class">
-<h2>1. Create a new environment class<a class="headerlink" href="#create-a-new-environment-class" title="Permalink to this heading">#</a></h2>
+<h2>1. Create a new environment class<a class="headerlink" href="#create-a-new-environment-class" title="Link to this heading">#</a></h2>
 <p>Create an environment class that inherits from <a class="reference external" href="https://gymnasium.farama.org/api/env/"><code class="docutils literal notranslate"><span class="pre">gymnasium.Env</span></code></a>. The class must implement the following methods:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">__init__(self,</span> <span class="pre">...)</span></code> - The constructor of the class. It should initialize the environment and set the <code class="docutils literal notranslate"><span class="pre">self.action_space</span></code> and<code class="docutils literal notranslate"><span class="pre">self.observation_space</span></code> attributes as in classical Gymnasium (see <a class="reference external" href="https://gymnasium.farama.org/api/spaces/">Spaces</a>. Moreover, since we are dealing with multiple objective/rewards, you should define a <code class="docutils literal notranslate"><span class="pre">self.reward_space</span></code> attribute that defines the shape of the vector rewards returned by the environment, as well as <code class="docutils literal notranslate"><span class="pre">self.reward_dim</span></code> which is an integer defining the size of the reward vector.</p></li>
@@ -338,7 +327,7 @@
 </ul>
 </section>
 <section id="register-the-environment">
-<h2>2. Register the environment<a class="headerlink" href="#register-the-environment" title="Permalink to this heading">#</a></h2>
+<h2>2. Register the environment<a class="headerlink" href="#register-the-environment" title="Link to this heading">#</a></h2>
 <p>Register the environment in the <a class="reference external" href="https://gymnasium.farama.org/api/registry/">registry</a>. This is done by adding the following line to the <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> file in your env directory:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gymnasium.envs.registration</span> <span class="kn">import</span> <span class="n">register</span>
 <span class="n">register</span><span class="p">(</span>
@@ -349,11 +338,11 @@
 </div>
 </section>
 <section id="test-the-environment">
-<h2>3. Test the environment<a class="headerlink" href="#test-the-environment" title="Permalink to this heading">#</a></h2>
+<h2>3. Test the environment<a class="headerlink" href="#test-the-environment" title="Link to this heading">#</a></h2>
 <p>If your environment is registered within the MO-Gymnasium repository (step 2), it should be automatically pulled for testing when you run <code class="docutils literal notranslate"><span class="pre">pytest</span></code>.</p>
 </section>
 <section id="instantiate-your-environment">
-<h2>4. Instantiate your environment<a class="headerlink" href="#instantiate-your-environment" title="Permalink to this heading">#</a></h2>
+<h2>4. Instantiate your environment<a class="headerlink" href="#instantiate-your-environment" title="Link to this heading">#</a></h2>
 <p>See our <a class="reference external" href="https://mo-gymnasium.farama.org/introduction/api/">API documentation</a>, but essentially:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">mo_gymnasium</span>
 <span class="n">env</span> <span class="o">=</span> <span class="n">mo_gymnasium</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s1">&#39;my_env_v0&#39;</span><span class="p">)</span>
@@ -458,12 +447,43 @@
     
     
 
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/sphinx_highlight.js"></script>
-    <script src="../../_static/scripts/furo.js"></script>
+    <script src="../../_static/documentation_options.js?v=c8e69ae7"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=7660844c"></script>
     
     <script>
+
+      const createProjectsList = (projects, displayImages) => {
+        const ulElem = Object.assign(document.createElement('ul'),
+          {
+            className:'farama-header-menu-list',
+          }
+        )
+        for (let project of projects) {
+          const liElem = document.createElement("li");
+          const aElem = Object.assign(document.createElement("a"),
+            {
+              href: project.link
+            }
+          );
+          liElem.appendChild(aElem);
+          if (displayImages) {
+            const imgElem = Object.assign(document.createElement("img"),
+              {
+                src: project.image ? imagesBasepath + project.image : imagesBasepath + "/farama_black.svg",
+                alt: `${project.name} logo`,
+                className: "farama-black-logo-invert"
+              }
+            );
+            aElem.appendChild(imgElem);
+          }
+          aElem.appendChild(document.createTextNode(project.name));
+          ulElem.appendChild(liElem);
+        }
+        return ulElem;
+      }
+
       // Create menu with Farama projects by using the API at farama.org/api/projects.json
       const createCORSRequest = (method, url) => {
         let xhr = new XMLHttpRequest();
@@ -490,9 +510,15 @@
       xhr.onload = () => {
         const jsonResponse = xhr.response;
         const sections = {
-          "Documentation": [],
-          "Mature Projects": [],
-          "Incubating Projects": [],
+          "Core Projects": [],
+          "Mature Projects": {
+            "Documentation": [],
+            "Repositories": [],
+          },
+          "Incubating Projects": {
+            "Documentation": [],
+            "Repositories": [],
+          },
           "Foundation": [
             {
               name: "About",
@@ -508,28 +534,38 @@
             }
           ]
         }
+
+        // Categorize projects
         Object.keys(jsonResponse).forEach(key => {
           projectJson = jsonResponse[key];
           if (projectJson.website !== null) {
             projectJson.link = projectJson.website;
-            sections["Documentation"].push(projectJson)
-          } else if (projectJson.type == "mature") {
-            projectJson.link = projectJson.github;
-            sections["Mature Projects"].push(projectJson)
           } else {
             projectJson.link = projectJson.github;
-            sections["Incubating Projects"].push(projectJson)
+          }
+          if (projectJson.type === "core") {
+            sections["Core Projects"].push(projectJson)
+          } else if (projectJson.type == "mature") {
+            if (projectJson.website !== null) {
+              sections["Mature Projects"]["Documentation"].push(projectJson)
+            } else {
+              sections["Mature Projects"]["Repositories"].push(projectJson)
+            }
+          } else {
+            if (projectJson.website !== null) {
+              sections["Incubating Projects"]["Documentation"].push(projectJson)
+            } else {
+              sections["Incubating Projects"]["Repositories"].push(projectJson)
+            }
           }
         })
 
         const menuContainer = document.querySelector(".farama-header-menu__body");
 
         Object.keys(sections).forEach((key, i) => {
-          projects = sections[key];
           const sectionElem = Object.assign(
             document.createElement('div'), {
               className:'farama-header-menu__section',
-              style: "padding-left: 24px"
             }
           )
           sectionElem.appendChild(Object.assign(document.createElement('span'),
@@ -538,33 +574,37 @@
               innerText: key
             }
           ))
-          const ulElem = Object.assign(document.createElement('ul'),
-            {
-              className:'farama-header-menu-list',
-            }
-          )
-          for (let project of projects) {
-            const liElem = document.createElement("li");
-            const aElem = Object.assign(document.createElement("a"),
-              {
-                href: project.link
-              }
-            );
-            liElem.appendChild(aElem);
-            if (key !== "Foundation") {
-              const imgElem = Object.assign(document.createElement("img"),
-                {
-                  src: project.image ? imagesBasepath + project.image : imagesBasepath + "/farama_black.svg",
-                  alt: `${project.name} logo`,
-                  className: "farama-black-logo-invert"
+          // is not a list
+          if (sections[key].constructor !== Array) {
+            const subSections = sections[key];
+            const subSectionContainerElem = Object.assign(
+                document.createElement('div'), {
+                  className:'farama-header-menu__subsections-container',
+                  style: 'display: flex'
                 }
-              );
-              aElem.appendChild(imgElem);
-            }
-            aElem.appendChild(document.createTextNode(project.name));
-            ulElem.appendChild(liElem);
+            )
+            Object.keys(subSections).forEach((subKey, i) => {
+              const subSectionElem = Object.assign(
+                document.createElement('div'), {
+                  className:'farama-header-menu__subsection',
+                }
+              )
+              subSectionElem.appendChild(Object.assign(document.createElement('span'),
+                {
+                  className:'farama-header-menu__subsection-title' ,
+                  innerText: subKey
+                }
+              ))
+              const ulElem = createProjectsList(subSections[subKey], key !== 'Foundation');
+              subSectionElem.appendChild(ulElem);
+              subSectionContainerElem.appendChild(subSectionElem);
+            })
+            sectionElem.appendChild(subSectionContainerElem);
+          } else {
+            const projects = sections[key];
+            const ulElem = createProjectsList(projects, true);
+            sectionElem.appendChild(ulElem);
           }
-          sectionElem.appendChild(ulElem);
           menuContainer.appendChild(sectionElem)
         });
       }
